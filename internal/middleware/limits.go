@@ -25,8 +25,10 @@ func RateLimit(limiter *ratelimit.Limiter) func(http.Handler) http.Handler {
 					retry = 1
 				}
 				w.Header().Set("Retry-After", strconv.Itoa(retry))
-				message := "request rate limit exceeded"
-				http.Error(w, message, http.StatusTooManyRequests)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusTooManyRequests)
+				body := map[string]any{"code": "rate_limited", "message": "request rate limit exceeded", "request_id": RequestIDFrom(r.Context())}
+				_ = json.NewEncoder(w).Encode(body)
 				return
 			}
 			next.ServeHTTP(w, r)
